@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Dashboard — Sparklines</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg-base:       #f4f5f7;
+    --bg-surface:    #ffffff;
+    --bg-elevated:   #f8f9fb;
+    --bg-hover:      #f0f1f5;
+    --border:        #e2e5ec;
+    --border-subtle: #eceef3;
+
+    --text-primary:   #111827;
+    --text-secondary: #4b5563;
+    --text-muted:     #9ca3af;
+    --text-code:      #4f46e5;
+
+    --accent:       #4f46e5;
+    --accent-light: #eef2ff;
+    --accent-mid:   #c7d2fe;
+
+    --success:    #059669;
+    --success-dim:#d1fae5;
+    --warning:    #d97706;
+    --warning-dim:#fef3c7;
+    --danger:     #dc2626;
+    --danger-dim: #fee2e2;
+
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
+
+    --r-sm: 6px;
+    --r-md: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .logo {
+    padding: 0 20px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 16px;
+  }
+
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: white;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.2);
+  }
+
+  .logo-name { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .logo-badge {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--accent-mid);
+  }
+
+  .nav-group { padding: 0 10px; margin-bottom: 4px; }
+
+  .nav-section-label {
+    font-size: 10px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 8px 10px 5px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-bottom: 1px;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .nav-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .nav-item .icon { font-size: 12px; width: 15px; text-align: center; }
+
+  .nav-badge {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--danger-dim);
+    color: var(--danger);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 10px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .workspace-pill {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+  }
+
+  .workspace-pill:hover { border-color: var(--accent-mid); background: var(--bg-hover); }
+
+  .avatar {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+
+  .ws-name { font-size: 12px; font-weight: 600; }
+  .ws-plan { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    padding: 28px 36px;
+    overflow-y: auto;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .page-title { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
+  .page-sub   { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+  .header-right { display: flex; gap: 10px; align-items: center; }
+
+  .time-tabs {
+    display: flex;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .time-tab {
+    padding: 6px 11px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-right: 1px solid var(--border-subtle);
+    transition: background 0.1s, color 0.1s;
+  }
+
+  .time-tab:last-child { border-right: none; }
+  .time-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .time-tab.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 13px;
+    border-radius: var(--r-sm);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.12s;
+  }
+
+  .btn-ghost {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-ghost:hover { background: var(--bg-hover); border-color: var(--accent-mid); color: var(--text-primary); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.2);
+  }
+  .btn-primary:hover { background: #4338ca; }
+
+  /* ── Alert ── */
+  .alert {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px;
+    background: var(--warning-dim);
+    border: 1px solid #fcd34d;
+    border-left: 3px solid var(--warning);
+    border-radius: var(--r-sm);
+    margin-bottom: 20px;
+    font-size: 12px;
+  }
+
+  .alert-close {
+    margin-left: auto;
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer; font-size: 16px;
+  }
+
+  /* ── Stat cards ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .stat {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  }
+
+  .stat:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-mid);
+    transform: translateY(-1px);
+  }
+
+  .stat-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .stat-label {
+    font-size: 10px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .stat-icon {
+    width: 28px; height: 28px;
+    border-radius: var(--r-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px; font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-delta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-flex; align-items: center; gap: 2px;
+  }
+
+  .delta-pos { background: var(--success-dim); color: var(--success); }
+  .delta-neg { background: var(--danger-dim); color: var(--danger); }
+  .delta-neu { background: #f3f4f6; color: var(--text-muted); }
+
+  .stat-sub { font-size: 11px; color: var(--text-muted); margin-left: 5px; }
+
+  /* ── Two-col: status + donut ── */
+  .mid-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    margin-bottom: 20px;
+    align-items: start;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .status-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-ok   { background: var(--success); box-shadow: 0 0 0 3px var(--success-dim); }
+  .dot-warn { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-dim); }
+
+  .svc-name { font-size: 12px; font-weight: 600; }
+  .svc-sub  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+  .uptime-pill {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 5px;
+  }
+
+  .pill-ok   { color: var(--success); background: var(--success-dim); }
+  .pill-warn { color: var(--warning); background: var(--warning-dim); }
+
+  /* Donut card */
+  .donut-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+    width: 220px;
+  }
+
+  .donut-title { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .donut-sub   { font-size: 11px; color: var(--text-muted); margin-bottom: 14px; }
+
+  .donut-body {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .dl-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px;
+  }
+
+  .dl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dl-label { color: var(--text-secondary); min-width: 24px; font-family: 'JetBrains Mono', monospace; }
+  .dl-pct { margin-left: auto; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); font-size: 11px; }
+
+  /* ── Endpoint table — the hero ── */
+  .table-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table-title { font-size: 13px; font-weight: 600; }
+  .table-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .table-actions { display: flex; gap: 8px; align-items: center; }
+
+  .search-input {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    width: 180px;
+  }
+
+  /* Column grid: endpoint | sparkline | requests | p50 | p95 | error% | trend */
+  .col-grid {
+    display: grid;
+    grid-template-columns: 1fr 80px 90px 72px 80px 72px 60px;
+    gap: 0;
+    align-items: center;
+  }
+
+  .th-row {
+    padding: 8px 20px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    font-size: 10px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .th-row > span { padding: 0 6px; }
+  .th-right { text-align: right; }
+
+  .ep-row {
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.1s;
+    cursor: default;
+  }
+
+  .ep-row:last-child { border-bottom: none; }
+  .ep-row:hover { background: var(--bg-hover); }
+
+  .ep-row > div { padding: 12px 6px; }
+
+  /* Endpoint cell */
+  .ep-info {}
+
+  .ep-path-row { display: flex; align-items: center; }
+
+  .method {
+    display: inline-flex; align-items: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 600;
+    margin-right: 7px;
+    flex-shrink: 0;
+  }
+
+  .m-get    { background: #d1fae5; color: #065f46; }
+  .m-post   { background: var(--accent-light); color: var(--accent); }
+  .m-delete { background: var(--danger-dim); color: var(--danger); }
+  .m-patch  { background: var(--warning-dim); color: var(--warning); }
+
+  .ep-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 500;
+    color: var(--text-code);
+  }
+
+  .ep-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; padding-left: 1px; }
+
+  /* Sparkline cell */
+  .sparkline-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  /* Numeric cells */
+  .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: right;
+  }
+
+  /* Error badge */
+  .err-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    float: right;
+  }
+
+  .err-ok   { background: var(--success-dim); color: var(--success); }
+  .err-warn { background: var(--warning-dim); color: var(--warning); }
+  .err-bad  { background: var(--danger-dim);  color: var(--danger); }
+
+  /* Trend arrow */
+  .trend {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600;
+    text-align: right;
+  }
+
+  .trend-up   { color: var(--success); }
+  .trend-down { color: var(--danger); }
+  .trend-flat { color: var(--text-muted); }
+
+  /* Footer row */
+  .table-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--text-muted);
+    background: var(--bg-elevated);
+  }
+
+  .pagination {
+    display: flex; gap: 4px; align-items: center;
+  }
+
+  .page-btn {
+    padding: 3px 9px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-surface);
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.1s;
+  }
+
+  .page-btn:hover { background: var(--bg-hover); border-color: var(--accent-mid); color: var(--accent); }
+  .page-btn.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent-mid); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">⬡</div>
+    <span class="logo-name">Nexus API</span>
+    <span class="logo-badge">v2</span>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-section-label">Monitor</div>
+    <a class="nav-item active" href="#"><span class="icon">▣</span> Overview</a>
+    <a class="nav-item" href="#"><span class="icon">⌁</span> Requests</a>
+    <a class="nav-item" href="#"><span class="icon">⚡</span> Logs <span class="nav-badge">3</span></a>
+    <a class="nav-item" href="#"><span class="icon">◎</span> Alerts</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-section-label">Manage</div>
+    <a class="nav-item" href="#"><span class="icon">⊞</span> Endpoints</a>
+    <a class="nav-item" href="#"><span class="icon">◈</span> API Keys</a>
+    <a class="nav-item" href="#"><span class="icon">⬡</span> Webhooks</a>
+    <a class="nav-item" href="#"><span class="icon">⊙</span> Rate Limits</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-section-label">Account</div>
+    <a class="nav-item" href="#"><span class="icon">⊕</span> Settings</a>
+    <a class="nav-item" href="#"><span class="icon">⊘</span> Billing</a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="workspace-pill">
+      <div class="avatar">TS</div>
+      <div>
+        <div class="ws-name">Taylor's Workspace</div>
+        <div class="ws-plan">Pro · 2.1M / 5M req</div>
+      </div>
+      <span style="margin-left:auto;color:var(--text-muted);font-size:10px">⌃</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">API Overview</h1>
+      <p class="page-sub">Monday, Feb 23 · All environments</p>
+    </div>
+    <div class="header-right">
+      <div class="time-tabs">
+        <span class="time-tab">1h</span>
+        <span class="time-tab">6h</span>
+        <span class="time-tab active">24h</span>
+        <span class="time-tab">7d</span>
+        <span class="time-tab">30d</span>
+      </div>
+      <button class="btn btn-ghost">⇩ Export</button>
+      <button class="btn btn-primary">+ New Key</button>
+    </div>
+  </div>
+
+  <!-- Alert -->
+  <div class="alert">
+    <span>⚠</span>
+    <span><strong style="color:var(--warning)">Rate limit warning:</strong> POST /v2/embeddings is at 84% of its hourly quota. Resets in 23 min.</span>
+    <button class="alert-close">×</button>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Total Requests</span>
+        <div class="stat-icon" style="background:var(--accent-light);color:var(--accent)">⌁</div>
+      </div>
+      <div class="stat-value">2.14M</div>
+      <span class="stat-delta delta-pos">↑ 12.4%</span>
+      <span class="stat-sub">vs yesterday</span>
+    </div>
+
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Avg Latency</span>
+        <div class="stat-icon" style="background:var(--success-dim);color:var(--success)">◷</div>
+      </div>
+      <div class="stat-value">142<span style="font-size:15px;color:var(--text-muted);font-weight:400">ms</span></div>
+      <span class="stat-delta delta-pos">↓ 8ms</span>
+      <span class="stat-sub">faster</span>
+    </div>
+
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Error Rate</span>
+        <div class="stat-icon" style="background:var(--danger-dim);color:var(--danger)">⚡</div>
+      </div>
+      <div class="stat-value" style="color:var(--danger)">0.8<span style="font-size:15px;font-weight:400">%</span></div>
+      <span class="stat-delta delta-neg">↑ 0.2%</span>
+      <span class="stat-sub">increase</span>
+    </div>
+
+    <div class="stat">
+      <div class="stat-top">
+        <span class="stat-label">Active Keys</span>
+        <div class="stat-icon" style="background:var(--warning-dim);color:var(--warning)">◈</div>
+      </div>
+      <div class="stat-value">24</div>
+      <span class="stat-delta delta-neu">— unchanged</span>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:5px">3 expire soon</div>
+    </div>
+  </div>
+
+  <!-- Status + Donut row -->
+  <div class="mid-row">
+    <div class="status-grid">
+      <div class="status-card">
+        <div class="dot dot-ok"></div>
+        <div><div class="svc-name">API Gateway</div><div class="svc-sub">All regions operational</div></div>
+        <span class="uptime-pill pill-ok">99.98%</span>
+      </div>
+      <div class="status-card">
+        <div class="dot dot-ok"></div>
+        <div><div class="svc-name">Authentication</div><div class="svc-sub">Normal latency</div></div>
+        <span class="uptime-pill pill-ok">100%</span>
+      </div>
+      <div class="status-card">
+        <div class="dot dot-warn"></div>
+        <div><div class="svc-name">Embedding Endpoint</div><div class="svc-sub">Elevated queue depth</div></div>
+        <span class="uptime-pill pill-warn">98.1%</span>
+      </div>
+      <div class="status-card">
+        <div class="dot dot-ok"></div>
+        <div><div class="svc-name">Webhooks</div><div class="svc-sub">Delivery nominal</div></div>
+        <span class="uptime-pill pill-ok">99.94%</span>
+      </div>
+    </div>
+
+    <!-- Donut -->
+    <div class="donut-card">
+      <div class="donut-title">Status Codes</div>
+      <div class="donut-sub">Last 24h</div>
+      <div class="donut-body">
+        <svg width="72" height="72" viewBox="0 0 72 72" style="flex-shrink:0">
+          <circle cx="36" cy="36" r="28" fill="none" stroke="#f3f4f6" stroke-width="10"/>
+          <!-- 2xx: 94.2% -->
+          <circle cx="36" cy="36" r="28" fill="none" stroke="#059669" stroke-width="10"
+                  stroke-dasharray="165.8 14.8" stroke-dashoffset="0"
+                  transform="rotate(-90 36 36)"/>
+          <!-- 4xx: 4.5% -->
+          <circle cx="36" cy="36" r="28" fill="none" stroke="#4f46e5" stroke-width="10"
+                  stroke-dasharray="15.9 164.7" stroke-dashoffset="-165.8"
+                  transform="rotate(-90 36 36)"/>
+          <!-- 5xx: 1.3% -->
+          <circle cx="36" cy="36" r="28" fill="none" stroke="#dc2626" stroke-width="10"
+                  stroke-dasharray="4.6 176.0" stroke-dashoffset="-181.7"
+                  transform="rotate(-90 36 36)"/>
+          <text x="36" y="32" text-anchor="middle" fill="#111827" font-size="11" font-weight="600"
+                font-family="JetBrains Mono,monospace">94.2%</text>
+          <text x="36" y="43" text-anchor="middle" fill="#9ca3af" font-size="7"
+                font-family="JetBrains Mono,monospace">success</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="dl-item">
+            <div class="dl-dot" style="background:#059669"></div>
+            <span class="dl-label">2xx</span>
+            <span class="dl-pct">94.2%</span>
+          </div>
+          <div class="dl-item">
+            <div class="dl-dot" style="background:#4f46e5"></div>
+            <span class="dl-label">4xx</span>
+            <span class="dl-pct">4.5%</span>
+          </div>
+          <div class="dl-item">
+            <div class="dl-dot" style="background:#dc2626"></div>
+            <span class="dl-label">5xx</span>
+            <span class="dl-pct">1.3%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Endpoint table — hero section ── -->
+  <div class="table-card">
+    <div class="table-header">
+      <div>
+        <div class="table-title">Endpoints</div>
+        <div class="table-sub">18 active · sorted by request volume</div>
+      </div>
+      <div class="table-actions">
+        <div class="search-input">
+          <span>🔍</span>
+          <span>Filter endpoints…</span>
+        </div>
+        <button class="btn btn-ghost" style="font-size:12px">↕ Sort</button>
+        <button class="btn btn-ghost" style="font-size:12px">⊞ Columns</button>
+      </div>
+    </div>
+
+    <!-- Column headers -->
+    <div class="col-grid th-row">
+      <span>Endpoint</span>
+      <span>24h trend</span>
+      <span class="th-right">Requests</span>
+      <span class="th-right">P50</span>
+      <span class="th-right">P95</span>
+      <span class="th-right">Errors</span>
+      <span class="th-right">Δ req</span>
+    </div>
+
+    <!-- Row 1: POST /v2/chat/completions -->
+    <div class="ep-row col-grid">
+      <div class="ep-info">
+        <div class="ep-path-row">
+          <span class="method m-post">POST</span>
+          <span class="ep-path">/v2/chat/completions</span>
+        </div>
+        <div class="ep-name">Chat completions</div>
+      </div>
+      <div class="sparkline-cell">
+        <!-- Healthy upward trend -->
+        <svg width="72" height="28" viewBox="0 0 72 28">
+          <defs>
+            <linearGradient id="sp1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M2,22 L8,20 L14,18 L20,19 L26,15 L32,16 L38,13 L44,14 L50,10 L56,11 L62,8 L68,6 L68,26 L2,26 Z" fill="url(#sp1)"/>
+          <polyline points="2,22 8,20 14,18 20,19 26,15 32,16 38,13 44,14 50,10 56,11 62,8 68,6"
+                    fill="none" stroke="#4f46e5" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="68" cy="6" r="2.5" fill="#4f46e5"/>
+        </svg>
+      </div>
+      <div class="num">841,204</div>
+      <div class="num">138ms</div>
+      <div class="num">412ms</div>
+      <div style="text-align:right;padding:12px 6px"><span class="err-badge err-ok">0.3%</span></div>
+      <div class="trend trend-up">↑ 14%</div>
+    </div>
+
+    <!-- Row 2: POST /v2/embeddings -->
+    <div class="ep-row col-grid">
+      <div class="ep-info">
+        <div class="ep-path-row">
+          <span class="method m-post">POST</span>
+          <span class="ep-path">/v2/embeddings</span>
+        </div>
+        <div class="ep-name">Text embeddings</div>
+      </div>
+      <div class="sparkline-cell">
+        <!-- Spike then recovery -->
+        <svg width="72" height="28" viewBox="0 0 72 28">
+          <defs>
+            <linearGradient id="sp2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#d97706" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#d97706" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M2,18 L8,17 L14,16 L20,15 L26,4 L32,5 L38,14 L44,15 L50,16 L56,15 L62,16 L68,15 L68,26 L2,26 Z" fill="url(#sp2)"/>
+          <polyline points="2,18 8,17 14,16 20,15 26,4 32,5 38,14 44,15 50,16 56,15 62,16 68,15"
+                    fill="none" stroke="#d97706" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="68" cy="15" r="2.5" fill="#d97706"/>
+        </svg>
+      </div>
+      <div class="num">512,088</div>
+      <div class="num">84ms</div>
+      <div class="num">290ms</div>
+      <div style="text-align:right;padding:12px 6px"><span class="err-badge err-warn">2.1%</span></div>
+      <div class="trend trend-up">↑ 8%</div>
+    </div>
+
+    <!-- Row 3: GET /v2/models -->
+    <div class="ep-row col-grid">
+      <div class="ep-info">
+        <div class="ep-path-row">
+          <span class="method m-get">GET</span>
+          <span class="ep-path">/v2/models</span>
+        </div>
+        <div class="ep-name">List models</div>
+      </div>
+      <div class="sparkline-cell">
+        <!-- Flat / stable -->
+        <svg width="72" height="28" viewBox="0 0 72 28">
+          <defs>
+            <linearGradient id="sp3" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#059669" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="#059669" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M2,16 L8,15 L14,16 L20,15 L26,16 L32,14 L38,15 L44,16 L50,15 L56,14 L62,15 L68,14 L68,26 L2,26 Z" fill="url(#sp3)"/>
+          <polyline points="2,16 8,15 14,16 20,15 26,16 32,14 38,15 44,16 50,15 56,14 62,15 68,14"
+                    fill="none" stroke="#059669" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="68" cy="14" r="2.5" fill="#059669"/>
+        </svg>
+      </div>
+      <div class="num">304,917</div>
+      <div class="num">22ms</div>
+      <div class="num">61ms</div>
+      <div style="text-align:right;padding:12px 6px"><span class="err-badge err-ok">0.0%</span></div>
+      <div class="trend trend-flat">→ 0%</div>
+    </div>
+
+    <!-- Row 4: POST /v2/images/generate -->
+    <div class="ep-row col-grid">
+      <div class="ep-info">
+        <div class="ep-path-row">
+          <span class="method m-post">POST</span>
+          <span class="ep-path">/v2/images/generate</span>
+        </div>
+        <div class="ep-name">Image generation</div>
+      </div>
+      <div class="sparkline-cell">
+        <!-- Growing trend -->
+        <svg width="72" height="28" viewBox="0 0 72 28">
+          <defs>
+            <linearGradient id="sp4" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M2,24 L8,23 L14,22 L20,21 L26,20 L32,18 L38,17 L44,15 L50,13 L56,11 L62,9 L68,7 L68,26 L2,26 Z" fill="url(#sp4)"/>
+          <polyline points="2,24 8,23 14,22 20,21 26,20 32,18 38,17 44,15 50,13 56,11 62,9 68,7"
+                    fill="none" stroke="#4f46e5" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="68" cy="7" r="2.5" fill="#4f46e5"/>
+        </svg>
+      </div>
+      <div class="num">198,340</div>
+      <div class="num">3,210ms</div>
+      <div class="num">8,940ms</div>
+      <div style="text-align:right;padding:12px 6px"><span class="err-badge err-warn">1.8%</span></div>
+      <div class="trend trend-up">↑ 31%</div>
+    </div>
+
+    <!-- Row 5: GET /v2/usage -->
+    <div class="ep-row col-grid">
+      <div class="ep-info">
+        <div class="ep-path-row">
+          <span class="method m-get">GET</span>
+          <span class="ep-path">/v2/usage</span>
+        </div>
+        <div class="ep-name">Usage stats</div>
+      </div>
+      <div class="sparkline-cell">
+        <!-- Slight decline -->
+        <svg width="72" height="28" viewBox="0 0 72 28">
+          <defs>
+            <linearGradient id="sp5" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#059669" stop-opacity="0.1"/>
+              <stop offset="100%" stop-color="#059669" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M2,10 L8,11 L14,12 L20,13 L26,14 L32,14 L38,15 L44,16 L50,17 L56,17 L62,18 L68,19 L68,26 L2,26 Z" fill="url(#sp5)"/>
+          <polyline points="2,10 8,11 14,12 20,13 26,14 32,14 38,15 44,16 50,17 56,17 62,18 68,19"
+                    fill="none" stroke="#059669" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="68" cy="19" r="2.5" fill="#059669"/>
+        </svg>
+      </div>
+      <div class="num">87,441</div>
+      <div class="num">31ms</div>
+      <div class="num">88ms</div>
+      <div style="text-align:right;padding:12px 6px"><span class="err-badge err-ok">0.1%</span></div>
+      <div class="trend trend-down">↓ 5%</div>
+    </div>
+
+    <!-- Row 6: DELETE /v2/files/{id} -->
+    <div class="ep-row col-grid">
+      <div class="ep-info">
+        <div class="ep-path-row">
+          <span class="method m-delete">DEL</span>
+          <span class="ep-path">/v2/files/{"{id}"}</span>
+        </div>
+        <div class="ep-name">Delete file</div>
+      </div>
+      <div class="sparkline-cell">
+        <!-- Erratic / bad -->
+        <svg width="72" height="28" viewBox="0 0 72 28">
+          <defs>
+            <linearGradient id="sp6" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#dc2626" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="#dc2626" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M2,18 L8,14 L14,20 L20,12 L26,22 L32,10 L38,18 L44,8 L50,20 L56,14 L62,22 L68,16 L68,26 L2,26 Z" fill="url(#sp6)"/>
+          <polyline points="2,18 8,14 14,20 20,12 26,22 32,10 38,18 44,8 50,20 56,14 62,22 68,16"
+                    fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="68" cy="16" r="2.5" fill="#dc2626"/>
+        </svg>
+      </div>
+      <div class="num">34,109</div>
+      <div class="num">56ms</div>
+      <div class="num">145ms</div>
+      <div style="text-align:right;padding:12px 6px"><span class="err-badge err-bad">4.7%</span></div>
+      <div class="trend trend-down">↓ 12%</div>
+    </div>
+
+    <!-- Row 7: PATCH /v2/assistants/{id} -->
+    <div class="ep-row col-grid">
+      <div class="ep-info">
+        <div class="ep-path-row">
+          <span class="method m-patch">PATCH</span>
+          <span class="ep-path">/v2/assistants/{"{id}"}</span>
+        </div>
+        <div class="ep-name">Update assistant</div>
+      </div>
+      <div class="sparkline-cell">
+        <!-- Flat low -->
+        <svg width="72" height="28" viewBox="0 0 72 28">
+          <defs>
+            <linearGradient id="sp7" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.08"/>
+              <stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M2,20 L8,21 L14,20 L20,21 L26,19 L32,21 L38,20 L44,21 L50,19 L56,20 L62,21 L68,20 L68,26 L2,26 Z" fill="url(#sp7)"/>
+          <polyline points="2,20 8,21 14,20 20,21 26,19 32,21 38,20 44,21 50,19 56,20 62,21 68,20"
+                    fill="none" stroke="#4f46e5" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"/>
+          <circle cx="68" cy="20" r="2.5" fill="#4f46e5" opacity="0.5"/>
+        </svg>
+      </div>
+      <div class="num">18,302</div>
+      <div class="num">44ms</div>
+      <div class="num">122ms</div>
+      <div style="text-align:right;padding:12px 6px"><span class="err-badge err-ok">0.2%</span></div>
+      <div class="trend trend-flat">→ 1%</div>
+    </div>
+
+    <!-- Table footer -->
+    <div class="table-footer">
+      <span>Showing 7 of 18 endpoints</span>
+      <div class="pagination">
+        <button class="page-btn">←</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">→</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
