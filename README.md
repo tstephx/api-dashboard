@@ -1,4 +1,5 @@
 # API Dashboard
+[![Storybook](https://img.shields.io/badge/Storybook-docs-FF4785?logo=storybook&logoColor=white)](https://tstephx.github.io/api-dashboard/)
 
 A design exploration and React component library for API usage monitoring dashboards.
 
