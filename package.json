@@ -1,6 +1,6 @@
 {
   "name": "@tstephx/api-dashboard",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "React components for API usage monitoring dashboards",
   "license": "MIT",
   "author": "Taylor Stephens",
