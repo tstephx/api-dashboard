@@ -169,6 +169,94 @@ When the user switches time ranges, the component appends `?window=<value>` to `
 
 ---
 
+---
+
+## Use Cases
+
+### General
+
+**Internal API health page**
+Drop `ApiDashboard` into any internal Next.js or Vite app to give your team a live view of request volume, error rates, and latency — no third-party dashboarding tool needed.
+
+**Public status page for an API product**
+Render `ApiDashboard` on a public-facing route (e.g. `status.yourdomain.com`) to show customers that your API is healthy. Point `apiUrl` at a read-only endpoint that aggregates your observability data.
+
+**CI/CD post-deploy health check UI**
+After a deployment, redirect engineers to a dashboard view that auto-loads with `?window=1h` — spotting regressions in p95 latency or error rate immediately after a release.
+
+**Multi-tenant SaaS — per-customer usage view**
+Mount the dashboard on a customer-scoped route (`/customers/:id/usage`). Pass a token-authenticated `apiUrl` so each customer sees only their own traffic.
+
+**Engineering on-call runbook companion**
+Embed `ApiDashboardV3` in an internal runbook tool so on-call engineers can see sparklines and expand latency histograms for any endpoint without leaving the incident page.
+
+---
+
+### Projects in `~/Dev/`
+
+**`book-mcp-server` — MCP server monitoring**
+The book MCP server exposes tools over HTTP. Use `ApiDashboardV3` to monitor which tools are called most, latency per tool, and error rates. Each MCP tool maps to an endpoint row — the sparkline shows call frequency over the last 24h. Expand a row to see latency histogram when a tool starts timing out.
+
+```tsx
+<ApiDashboardV3
+  apiUrl="http://localhost:8000/admin/dashboard"
+  title="Book MCP Server"
+  pageSize={15}
+/>
+```
+
+**`book-ingestion-python` — batch pipeline observability**
+The ingestion pipeline processes books through multiple stages (fetch → parse → embed → store). Use `ApiDashboard` to track throughput per stage as a "request volume" chart, p95 processing time per stage as latency, and failed ingestions as error rate.
+
+```tsx
+<ApiDashboard
+  apiUrl="http://localhost:8001/pipeline/stats"
+  title="Book Ingestion Pipeline"
+/>
+```
+
+**`my-mcp-portfolio` — portfolio MCP tool usage**
+You have 56–65 tools in the portfolio MCP server. `ApiDashboardV3` is a natural fit — one row per tool, sparkline showing how often each is called, expandable histogram for response time distribution. Helps identify which tools are slow or unused.
+
+```tsx
+<ApiDashboardV3
+  apiUrl="http://localhost:9000/metrics/dashboard"
+  title="Portfolio MCP"
+  pageSize={20}
+/>
+```
+
+**`whatbox` / `whatbox-live` — remote server task monitoring**
+Whatbox is a shared hosting environment running download/seed tasks. Use `ApiDashboard` to surface task queue metrics — jobs queued, jobs completed, error rate on failed downloads — as if they were API endpoints.
+
+```tsx
+<ApiDashboard
+  apiUrl="https://cucumber.whatbox.ca/api/dashboard"
+  title="Whatbox Task Monitor"
+/>
+```
+
+**`scripts/` — CLI tool invocation tracking**
+If you wrap personal scripts as HTTP calls (e.g. via a local FastAPI shim), use `ApiDashboardV3` to see which scripts run most, how long they take, and when they fail. Good for scripts that run on a schedule.
+
+**`_Lab` research projects — LLM call monitoring**
+Research projects typically make heavy use of the Claude API. Use `ApiDashboard` to track token usage over time (as a volume chart), latency per model call, and error/retry rates — all without exporting to an external tool.
+
+```tsx
+<ApiDashboard
+  apiUrl="http://localhost:7000/llm/stats"
+  title="LLM Call Monitor"
+/>
+```
+
+**`motley-fool-scraper` — scraper health dashboard**
+Web scrapers hit many endpoints. Use `ApiDashboardV3` with one row per target URL — sparkline shows crawl frequency, error rate shows how often requests are blocked or return non-200s, histogram shows response time distribution per target.
+
+**`portfolio-analysis` — financial data API monitoring**
+If this project hits external financial data APIs (market data, earnings, etc.), use `ApiDashboard` to track call volume against rate limits, p95 response time from external providers, and error rates from paid APIs where failures cost money.
+
+---
+
 ## Storybook
 
 Browse live component demos at **https://tstephx.github.io/api-dashboard/**
