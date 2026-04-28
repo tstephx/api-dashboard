@@ -118,6 +118,10 @@
   }
 
   .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .nav-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
 
   .nav-item.active {
     background: var(--accent-light);
@@ -155,6 +159,7 @@
   }
 
   .workspace-pill:hover { border-color: var(--accent-mid); background: var(--bg-hover); }
+  .workspace-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .avatar {
     width: 24px; height: 24px;
@@ -173,6 +178,7 @@
     flex: 1;
     padding: 28px 36px;
     overflow-y: auto;
+    max-width: 1400px;
   }
 
   .page-header {
@@ -208,6 +214,7 @@
 
   .time-tab:last-child { border-right: none; }
   .time-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .time-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   .time-tab.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
 
   .btn {
@@ -227,6 +234,7 @@
     box-shadow: var(--shadow-sm);
   }
   .btn-ghost:hover { background: var(--bg-hover); border-color: var(--accent-mid); color: var(--text-primary); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .btn-primary {
     background: var(--accent);
@@ -235,6 +243,7 @@
     box-shadow: 0 2px 8px rgba(79,70,229,0.2);
   }
   .btn-primary:hover { background: #4338ca; }
+  .btn-primary:active { background: #3730a3; transform: translateY(1px); }
 
   /* ── Alert ── */
   .alert {
@@ -252,7 +261,12 @@
     margin-left: auto;
     background: none; border: none;
     color: var(--text-muted); cursor: pointer; font-size: 16px;
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: color 0.1s, background 0.1s;
   }
+  .alert-close:hover { color: var(--text-primary); background: rgba(0,0,0,0.05); }
+  .alert-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ── Stat cards ── */
   .stats {
@@ -351,8 +365,8 @@
   .dot-ok   { background: var(--success); box-shadow: 0 0 0 3px var(--success-dim); }
   .dot-warn { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-dim); }
 
-  .svc-name { font-size: 12px; font-weight: 600; }
-  .svc-sub  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .svc-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .svc-sub  { font-size: 11px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .uptime-pill {
     margin-left: auto;
@@ -466,9 +480,9 @@
   .ep-row > div { padding: 12px 6px; }
 
   /* Endpoint cell */
-  .ep-info {}
+  .ep-info { min-width: 0; }
 
-  .ep-path-row { display: flex; align-items: center; }
+  .ep-path-row { display: flex; align-items: center; min-width: 0; }
 
   .method {
     display: inline-flex; align-items: center;
@@ -489,6 +503,10 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px; font-weight: 500;
     color: var(--text-code);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
   }
 
   .ep-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; padding-left: 1px; }
@@ -508,14 +526,13 @@
     text-align: right;
   }
 
-  /* Error badge */
+  /* Error badge — display: inline-block; no float (cell uses text-align:right) */
   .err-badge {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px; font-weight: 600;
     padding: 2px 6px;
     border-radius: 4px;
     display: inline-block;
-    float: right;
   }
 
   .err-ok   { background: var(--success-dim); color: var(--success); }
@@ -559,6 +576,7 @@
   }
 
   .page-btn:hover { background: var(--bg-hover); border-color: var(--accent-mid); color: var(--accent); }
+  .page-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .page-btn.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent-mid); font-weight: 600; }
 </style>
 </head>
@@ -595,7 +613,7 @@
   </div>
 
   <div class="sidebar-footer">
-    <div class="workspace-pill">
+    <div class="workspace-pill" tabindex="0" role="button" aria-label="Switch workspace">
       <div class="avatar">TS</div>
       <div>
         <div class="ws-name">Taylor's Workspace</div>
@@ -617,11 +635,11 @@
     </div>
     <div class="header-right">
       <div class="time-tabs">
-        <span class="time-tab">1h</span>
-        <span class="time-tab">6h</span>
-        <span class="time-tab active">24h</span>
-        <span class="time-tab">7d</span>
-        <span class="time-tab">30d</span>
+        <span class="time-tab" tabindex="0">1h</span>
+        <span class="time-tab" tabindex="0">6h</span>
+        <span class="time-tab active" tabindex="0">24h</span>
+        <span class="time-tab" tabindex="0">7d</span>
+        <span class="time-tab" tabindex="0">30d</span>
       </div>
       <button class="btn btn-ghost">⇩ Export</button>
       <button class="btn btn-primary">+ New Key</button>
@@ -683,22 +701,22 @@
     <div class="status-grid">
       <div class="status-card">
         <div class="dot dot-ok"></div>
-        <div><div class="svc-name">API Gateway</div><div class="svc-sub">All regions operational</div></div>
+        <div style="flex:1;min-width:0"><div class="svc-name">API Gateway</div><div class="svc-sub">All regions operational</div></div>
         <span class="uptime-pill pill-ok">99.98%</span>
       </div>
       <div class="status-card">
         <div class="dot dot-ok"></div>
-        <div><div class="svc-name">Authentication</div><div class="svc-sub">Normal latency</div></div>
+        <div style="flex:1;min-width:0"><div class="svc-name">Authentication</div><div class="svc-sub">Normal latency</div></div>
         <span class="uptime-pill pill-ok">100%</span>
       </div>
       <div class="status-card">
         <div class="dot dot-warn"></div>
-        <div><div class="svc-name">Embedding Endpoint</div><div class="svc-sub">Elevated queue depth</div></div>
+        <div style="flex:1;min-width:0"><div class="svc-name">Embedding Endpoint</div><div class="svc-sub">Elevated queue depth</div></div>
         <span class="uptime-pill pill-warn">98.1%</span>
       </div>
       <div class="status-card">
         <div class="dot dot-ok"></div>
-        <div><div class="svc-name">Webhooks</div><div class="svc-sub">Delivery nominal</div></div>
+        <div style="flex:1;min-width:0"><div class="svc-name">Webhooks</div><div class="svc-sub">Delivery nominal</div></div>
         <span class="uptime-pill pill-ok">99.94%</span>
       </div>
     </div>
