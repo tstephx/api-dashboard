@@ -6,3 +6,7 @@ dist
 storybook-static
 .DS_Store
 docs/.DS_Store
+
+# MemPalace per-project files (issue #185)
+mempalace.yaml
+entities.json
